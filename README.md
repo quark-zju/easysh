@@ -97,6 +97,13 @@ Tired with `puts` and `to_s` in REPL? Then set `instant = true`
 =>  Linux
 ```
 
+You may want to put these lines in `.pryrc` or `.irbrc`:
+
+```ruby
+require 'easysh'
+sh = EasySH.instant
+```
+
 Installation
 ============
 
