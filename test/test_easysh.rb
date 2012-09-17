@@ -78,6 +78,7 @@ class EasySHTest < Test::Unit::TestCase
     assert_fd_count_equal do
       assert_equal (sh.echo('hello') | kat | sh.false | kat | kat).read.empty?, true
     end
+    assert_raise(TypeError) { sh.echo('hello') | 'abc' }
   end
 
   def test_instant
