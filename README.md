@@ -33,7 +33,6 @@ sh.ls.max
 sh.ls.sort
 sh.ls.chars.to_a.sample(5)
 sh.cat('/dev/urandom').bytes.first(10)
-sh.ls._l.map{|l| l.split}
 sh.ps._e._o('euser,comm').map(&:split).group_by(&:first)
 ```
 
