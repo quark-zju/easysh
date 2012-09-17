@@ -1,5 +1,7 @@
 Make shell task easier for ruby script.
 
+Inspired by [sh (for Python)](http://amoffat.github.com/sh/index.html).
+
 Examples
 ========
 
