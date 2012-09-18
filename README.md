@@ -101,7 +101,8 @@ sudo.tail._f '/var/log/everything.log' do |l| puts l.upcase end
 
 By not passing a block, you can use external iterator: (Note: in this case, make sure that the iteration does reach the end, otherwise background processes do not exit)
 
-```rubysh.cat < '/tmp/abc' > '/tmp/def'
+```ruby
+sh.cat < '/tmp/abc' > '/tmp/def'
 iter = sh.ls('/sys/fs').lines
 iter.next             # 'btrfs'
 iter.next             # 'cgroup'
