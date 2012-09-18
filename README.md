@@ -29,10 +29,9 @@ EasySH automatically convert method names, symbols, hashes to meaningful paramet
 
 
 ```ruby
-puts sh.ls('/bin')._l # ls /bin -l
-puts sh.ls._l '/bin'  # ls -l /bin
-puts sh.ls._l '/bin', color: 'always'
-                      # ls /bin -l --color=always
+puts sh.ls('/bin')._l                 # ls /bin -l
+puts sh.ls._l '/bin'                  # ls -l /bin
+puts sh.ls._l '/bin', color: 'always' # ls /bin -l --color=always
 ```
 
 EasySH supports method chaining and `[params]`, `method(params)`, just write in any form as you like:
@@ -73,17 +72,15 @@ puts sudo[cmd].up     # sudo ifconfig eth0 up
 Ruby Enumerable
 ---------------
 
-EasySH makes full use of Ruby's Enumerable, every EasySH object has `each_line` (`lines`), `each_char` (`chars`), `each_byte` (`bytes`) available like string. `each` is the same as `each_line`.
+EasySH makes full use of Ruby's Enumerable. `each_line` (`lines`), `each_char` (`chars`), `each_byte` (`bytes`) are available like string. For convenience, `each` is an alias of `each_line`.
 
 Use Enumerable for simple or complex tasks:
 
 ```ruby
 sh.ls.max
 sh.ls.sort
-sh.ls.chars.to_a.sample(5)
-                      # pick 5 chars randomly from `ls`
-sh.ps._e._o('euser,comm').map(&:split).group_by(&:first)
-                      # group process names by user name
+sh.ls.chars.to_a.sample(5)                               # pick 5 chars randomly from `ls` output
+sh.ps._e._o('euser,comm').map(&:split).group_by(&:first) # group process names by user name
 ```
 
 EasySH handles endless stream correctly:
@@ -102,7 +99,6 @@ sudo.tail._f '/var/log/everything.log' do |l| puts l.upcase end
 By not passing a block, you can use external iterator: (Note: in this case, make sure that the iteration does reach the end, otherwise background processes do not exit)
 
 ```ruby
-sh.cat < '/tmp/abc' > '/tmp/def'
 iter = sh.ls('/sys/fs').lines
 iter.next             # 'btrfs'
 iter.next             # 'cgroup'
@@ -120,7 +116,6 @@ Use `<` or `>` (Note: only one input redirect and one output redirect is support
 puts sh.echo('hello') > '/tmp/test'
 puts sh.cat < '/tmp/test'
 puts sh.cat < '/tmp/abc' > '/tmp/def'
-
 ```
 
 You can also associate file descriptor to file directly by using fd numbers => filename Hash (Note: for more information, see Process.spawn. EasySH will distinct Hash parameters from Hash redirects by
@@ -137,10 +132,8 @@ Pipes
 Use `|` (Note: redirects except the rightmost output and leftmost input will be ignored) :
 
 ```ruby
-puts sh.man('ls') | sh.tail(n: 30) | sh.head(:n, 4)
-                      # man ls | tail -n 30 | head -n 4
-puts (sh.cat < '/tmp/abc') | sh.cat | sh.cat > '/tmp/def'
-                      # cat < /tmp/abc | cat | cat > /tmp/def
+puts sh.man('ls') | sh.tail(n: 30) | sh.head(:n, 4)       # man ls | tail -n 30 | head -n 4
+puts (sh.cat < '/tmp/abc') | sh.cat | sh.cat > '/tmp/def' # cat < /tmp/abc | cat | cat > /tmp/def
 ```
 
 EasySH objects connected with pipes can be saved for later use:
