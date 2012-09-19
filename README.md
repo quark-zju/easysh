@@ -49,7 +49,7 @@ You can save command with parameters to variables for later use:
 
 ```ruby
 myls = sh.ls._l :color => :always
-puts myls['/bin']     # note: myls '/bin' will not work since myls is an object, not an method
+puts myls['/bin']     # note: myls '/bin' will not work since myls is an object, not a method
 ```
 
 Commands can also be chained freely:
@@ -93,6 +93,7 @@ sudo[sh.tail._f '/var/log/everything.log'].lines { |l| puts l.upcase }
 You can even omit `lines` or `each` sometimes:
 
 ```ruby
+sh.cat { |l| puts l.upcase }
 sudo.tail._f '/var/log/everything.log' do |l| puts l.upcase end
 ```
 
@@ -132,6 +133,7 @@ Pipes
 Use `|` (Note: redirects except the rightmost output and leftmost input will be ignored) :
 
 ```ruby
+(sh.cat | sh.head(n: 5)).each { |l| puts l.upcase }
 puts sh.man('ls') | sh.tail(n: 30) | sh.head(:n, 4)       # man ls | tail -n 30 | head -n 4
 puts (sh.cat < '/tmp/abc') | sh.cat | sh.cat > '/tmp/def' # cat < /tmp/abc | cat | cat > /tmp/def
 ```
