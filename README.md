@@ -9,6 +9,7 @@ Basic usage
 -----------
 
 ```ruby
+require 'easysh'
 sh = EasySH.new
 
 puts sh.ls            # ls
