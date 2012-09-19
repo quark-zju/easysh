@@ -10,10 +10,10 @@ Basic usage
 
 ```ruby
 require 'easysh'
-sh = EasySH.new
+sh = EasySH.instant;
 
-puts sh.ls            # ls
-puts sh['/bin/ls']    # /bin/ls
+sh.ls            # ls
+sh['/bin/ls']    # /bin/ls
 ```
 
 Command-line parameters
@@ -30,44 +30,47 @@ EasySH automatically convert method names, symbols, hashes to meaningful paramet
 
 
 ```ruby
-puts sh.ls('/bin')._l                 # ls /bin -l
-puts sh.ls._l '/bin'                  # ls -l /bin
-puts sh.ls._l '/bin', color: 'always' # ls /bin -l --color=always
+sh.ls('/bin')._l                 # ls /bin -l
+sh.ls._l '/bin'                  # ls -l /bin
+sh.ls._l '/bin', color: 'always' # ls /bin -l --color=always
 ```
 
 EasySH supports method chaining and `[params]`, `method(params)`, just write in any form as you like:
 
 ```ruby
-puts sh['ls', '-l', :color => :always]
-puts sh.ls '/bin', :l, :color => :always
-puts sh.ls('/bin')['-l', :color => :always]
-puts sh.ls('/bin')._l(:color => :always)
-puts sh.ls._l(:color => :always)['/bin']
-puts sh.ls('/bin', :color => :always)._l
+sh['ls', '-l', :color => :always]
+sh.ls '/bin', :l, :color => :always
+sh.ls('/bin')['-l', :color => :always]
+sh.ls('/bin')._l(:color => :always)
+sh.ls._l(:color => :always)['/bin']
+sh.ls('/bin', :color => :always)._l
 ```
 
 You can save command with parameters to variables for later use:
 
 ```ruby
-myls = sh.ls._l :color => :always
-puts myls['/bin']     # note: myls '/bin' will not work since myls is an object, not a method
+myls = sh.ls._l :color => :always;
+myls['/bin']  # note: myls '/bin' will not work since myls is an object, not a method
 ```
 
 Commands can also be chained freely:
 
 ```ruby
-sudo = sh.sudo
-puts sudo.whoami
+sudo = sh.sudo;
+sudo.whoami
 
-lab = sh.ssh.lab      # or: sh.ssh 'lab', sh.ssh['lab'], sh.ssh('lab')
-puts lab.ls._l '/bin' # ssh lab ls -l /bin
+lab = sh.ssh.lab;      # or: sh.ssh 'lab', sh.ssh['lab'], sh.ssh('lab')
+lab.ls._l '/bin'       # ssh lab ls -l /bin
 ```
 
-You can pass an EasySH object as parameter to another EasySH object:
+You can pass arrays or EasySH objects(without pipes) as arguments to another EasySH object:
 
 ```ruby
-cmd = ifconfig.eth0
-puts sudo[cmd].up     # sudo ifconfig eth0 up
+cmd    = sh.ifconfig.eth0;
+opt    = ['mtu', 1440]
+sudo[cmd].up           # sudo ifconfig eth0 up
+sudo[cmd, opt].up      # sudo ifconfig eth0 up mtu 1440
+# sudo[cmd | sh.cat]   # Error: EasySH objects with pipes are not allowed here.
 ```
 
 Ruby Enumerable
@@ -109,24 +112,23 @@ iter.next             # 'fuse'
 iter.next             # StopIteration
 ```
 
-
 Redirects
 ---------
 
 Use `<` or `>` (Note: only one input redirect and one output redirect is supported currently):
 
 ```ruby
-puts sh.echo('hello') > '/tmp/test'
-puts sh.cat < '/tmp/test'
-puts sh.cat < '/tmp/abc' > '/tmp/def'
+sh.echo('hello') > '/tmp/test'
+sh.cat < '/tmp/test'
+sh.cat < '/tmp/abc' > '/tmp/def'
 ```
 
 You can also associate file descriptor to file directly by using fd numbers => filename Hash (Note: for more information, see Process.spawn. EasySH will distinct Hash parameters from Hash redirects by
 checking if the Hash has any numeric key):
 
 ```ruby
-puts sh.echo 'hello', 1 => '/tmp/stdout', 2 => '/tmp/stderr'
-puts sh.cat 0 => '/tmp/test'
+sh.echo 'hello', 1 => '/tmp/stdout', 2 => '/tmp/stderr'
+sh.cat 0 => '/tmp/test'
 ```
 
 Pipes
@@ -136,23 +138,23 @@ Use `|` (Note: redirects except the rightmost output and leftmost input will be 
 
 ```ruby
 (sh.cat | sh.head(n: 5)).each { |l| puts l.upcase }
-puts sh.man('ls') | sh.tail(n: 30) | sh.head(:n, 4)       # man ls | tail -n 30 | head -n 4
-puts (sh.cat < '/tmp/abc') | sh.cat | sh.cat > '/tmp/def' # cat < /tmp/abc | cat | cat > /tmp/def
+sh.man('ls') | sh.tail(n: 30) | sh.head(:n, 4)       # man ls | tail -n 30 | head -n 4
+(sh.cat < '/tmp/abc') | sh.cat | sh.cat > '/tmp/def' # cat < /tmp/abc | cat | cat > /tmp/def
 ```
 
 EasySH objects connected with pipes can be saved for later use:
 
 ```ruby
-grep   = sh['grep']   # sh.grep does not work because grep is provided by Enumerable
-filter = grep['problem'] | grep._v['bugs']
-puts sh.man.ls | filter
+grep   = sh['grep'];   # sh.grep does not work because grep is provided by Enumerable
+filter = grep['problem'] | grep._v['bugs'];
+sh.man.ls | filter
 ```
 
 Since EasySH does some lazy evaluation. You can add parentheses in anywhere in any order:
 
 ```ruby
-kat = sh.cat
-puts kat['/tmp/foo'] | (kat | kat | kat.|(kat) | (kat | kat) | (kat | kat))
+kat = sh.cat;
+kat['/tmp/foo'] | (kat | kat | kat.|(kat) | (kat | kat) | (kat | kat))
 ```
 
 Exit status
@@ -168,7 +170,7 @@ sh.false.to_i      # => 1
 `successful?` is `exitcode == 0` and `failed?` is `exitcode != 0`
 
 ```ruby
-grep = sh['grep', :q]
+grep = sh['grep', :q];
 (sh.echo.hello | grep['world']).failed?     # => true
 (sh.echo.world | grep['world']).successful? # => true
 ```
@@ -177,43 +179,53 @@ Use `status` method to get a Process::Status object about last run status:
 
 ```ruby
 p = sh.which('bash')
-puts p
 p.status        # => #<Process::Status: pid 5931 exit 0>
 p = sh.which.nonexists
-puts p
 p.status        # => #<Process::Status: pid 6156 exit 1>
 ```
 
 More sugars
 -----------
 
-An EasySH object behaviors like an Array or a String sometimes.
+An EasySH object behaves like an Array or a String sometimes.
 
 If you pass arguments like: `[int]`, `[int, int]`, `[range]`; `[regex]`, `[regex, int]`, then `to_a` or `to_s` will be automatically called.
 
 ```ruby
-# Behavior like an Array
+# like Array
 sh.echo("Line 1\nLine 2\nLine 3")[1]    # => "Line 2"
 sh.echo("Line 1\nLine 2\nLine 3")[-1]   # => "Line 3"
 sh.echo("Line 1\nLine 2\nLine 3")[0, 2] # => ["Line 1", "Line 2"]
 sh.echo("Line 1\nLine 2\nLine 3")[1..2] # => ["Line 2", "Line 3"]
 
-# Behavior like a String
+# like String
 sh.echo("Hello world\nThis is a test")[/T.*$/]            # => "This is a test"
 sh.echo("Hello world\nThis is a test")[/T.* ([^ ]*)$/, 1] # => "test"
 ```
 
 Instant mode
 ------------
-Tired with `puts` and `to_s` in REPL? Then set `instant = true`
+EasySH object with `instant = true` will execute command when `inspect` is called, which is useful in REPL environment like pry or irb.
 
+If you like traditional `inspect` behavior, you can create the `sh` object using:
+
+```ruby
+sh = EasySH.new
 ```
-[2] pry(main)> sh.instant = false; sh.uptime
-=> #<EasySH: uptime>
-[3] pry(main)> sh.instant = true; sh.uptime
-=>  22:14:23 up 1 day,  4:02, 12 users,  load average: 0.69, 0.65, 0.67
-[4] pry(main)> sh = EasySH.instant; sh.uname
-=>  Linux
+
+or set `instant` to false:
+
+```ruby
+sh.instant = false
+```
+
+With `instant = false`, you need additional `to_s` or `to_a` or `to_i` etc. to get command executed.
+
+```ruby
+[2] pry(main)> sh = EasySH.new; sh.uname
+=> #<EasySH: uname>
+[2] pry(main)> sh.uname.to_s
+=> "Linux"
 ```
 
 Installation

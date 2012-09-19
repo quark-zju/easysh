@@ -156,4 +156,29 @@ class EasySHTest < Test::Unit::TestCase
     assert_not_equal sh1.status, nil
     assert_equal sh1.exitcode, 0
   end
+
+  def test_sh_in_sh
+    sudo = sh.sudo
+    cmd  = sh.ifconfig.eth0
+
+    assert_equal sudo[cmd].cmd, sh.sudo.ifconfig.eth0.cmd
+    assert_equal sh.sudo(cmd).cmd, sh.sudo.ifconfig.eth0.cmd
+    assert_equal sudo[cmd, 'up'].cmd, sh.sudo.ifconfig.eth0.up.cmd
+    assert_equal sh.sudo(cmd).up.cmd, sh.sudo.ifconfig.eth0.up.cmd
+
+    assert_raise(ArgumentError) { sudo[cmd | cmd] }
+
+    opt = (sh > '/tmp/output')
+    assert_equal sudo.cmd, sudo[opt].cmd
+    assert_not_equal sudo.opt, sudo[opt].opt
+    assert_equal sudo[opt].opt[1], '/tmp/output'
+
+    mtu = sh.mtu['1440']
+    ref_cmd = sh.sudo.ifconfig.eth0.up.mtu['1440'].cmd
+    assert_equal ref_cmd, sh.sudo[cmd].up[mtu].cmd
+    assert_equal ref_cmd, sh.sudo[cmd, 'up', mtu].cmd
+    assert_equal ref_cmd, sh.sudo[cmd, ['up', mtu]].cmd
+    assert_equal ref_cmd, sh.sudo(cmd, 'up', mtu).cmd
+    assert_equal ref_cmd, sh.sudo(cmd, ['up', 'mtu', '1440']).cmd
+  end
 end
