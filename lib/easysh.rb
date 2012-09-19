@@ -47,10 +47,10 @@
 #  # exit status
 #  p = sh.which('bash')
 #  puts p
-#  p.exitstatus        # => #<Process::Status: pid 5931 exit 0>
+#  p.status        # => #<Process::Status: pid 5931 exit 0>
 #  p = sh.which.nonexists
 #  puts p
-#  p.exitstatus        # => #<Process::Status: pid 6156 exit 1>
+#  p.status        # => #<Process::Status: pid 6156 exit 1>
 #
 #
 #  # instant mode
@@ -63,10 +63,10 @@
 #  # =>  Linux
 # 
 #
-class EasySH < Struct.new(:cmd, :opt, :chain, :instant)
+class EasySH < Struct.new(:cmd, :opt, :chain, :instant) # :no-doc:
   include Enumerable
 
-  attr_reader   :exitstatus
+  attr_reader   :status
 
   def method_missing name, *args, &block # :no-doc:
     begin
@@ -78,14 +78,14 @@ class EasySH < Struct.new(:cmd, :opt, :chain, :instant)
     r = if name.is_a? EasySH
           self.class.new [*cmd, *name.cmd], Hash[*opt, *name.opt], chain, instant
         else
-          args = [name.to_s.gsub(/^_+/) {|s| '-' * s.size}, *args]
+          args = [name && name.to_s.gsub(/^_+/) {|s| '-' * s.size}, *args].compact
           *args, opt = *args if args.last.is_a?(Hash) && args.last.keys.find{|k| k.is_a? Integer}
           args = args.map do |a|
             case a
             when Symbol
               "-#{a.length > 1 ? '-' : ''}#{a}"
             when Hash
-              a.map { |k,v| k.length > 1 ? "--#{k}=#{v}" : "-#{k} #{v}" }
+              a.map { |k,v| k.length > 1 ? "--#{k}=#{v}" : ["-#{k}", v.to_s] }
             else
               a.to_s
             end
@@ -141,7 +141,7 @@ class EasySH < Struct.new(:cmd, :opt, :chain, :instant)
       end
     ensure
       pipes.flatten.each { |io| io.close unless io.closed? }
-      @exitstatus = Process.wait2(lpid)[-1] rescue nil
+      @status = Process.wait2(lpid)[-1] rescue nil
       ['TERM', 'KILL'].each { |sig| Process.kill sig, *pids rescue nil }
       Process.waitall rescue nil
     end
@@ -162,16 +162,43 @@ class EasySH < Struct.new(:cmd, :opt, :chain, :instant)
     to_io { |i| while b = i.getbyte; yield b; end }
   end
 
-  alias :call    :method_missing
-  alias :[]      :method_missing
-  alias :to_ary  :to_a
-  alias :lines   :each_line
-  alias :each    :each_line
-  alias :lines   :each_line
-  alias :chars   :each_char
-  alias :bytes   :each_byte
-  alias :read    :to_s
-  alias :!       :to_s
+  def [] i, *args
+    case i
+    when Integer
+      return to_a[i] if args.empty?
+      return to_a[i, *args] if args.size == 1 && args[0].is_a?(Integer)
+    when Range
+      return to_a[i] if args.empty?
+    when Regexp
+      return to_s[i, *args]
+    end
+    method_missing nil, i, *args
+  end
+
+  def to_i
+    to_s if status.nil?
+    (status && status.exitstatus) || 0
+  end
+
+  def successful? 
+    to_i == 0
+  end
+
+  def failed?
+    ! successful?
+  end
+
+  alias :call        :method_missing
+  alias :to_ary      :to_a
+  alias :lines       :each_line
+  alias :each        :each_line
+  alias :lines       :each_line
+  alias :chars       :each_char
+  alias :bytes       :each_byte
+  alias :read        :to_s
+  alias :!           :to_s
+  alias :exitstatus  :status
+  alias :exitcode    :to_i
 
   def pretty_print(q)
     q.text self.inspect

@@ -108,6 +108,7 @@ iter.next             # 'fuse'
 iter.next             # StopIteration
 ```
 
+
 Redirects
 ---------
 
@@ -155,15 +156,51 @@ puts kat['/tmp/foo'] | (kat | kat | kat.|(kat) | (kat | kat) | (kat | kat))
 
 Exit status
 -----------
+
+Use `exitcode` or `to_i` to get exitcode directly:
+
+```ruby
+sh.true.exitcode   # => 0
+sh.false.to_i      # => 1
+```
+
+`successful?` is `exitcode == 0` and `failed?` is `exitcode != 0`
+
+```ruby
+grep = sh['grep', :q]
+(sh.echo.hello | grep['world']).failed?     # => true
+(sh.echo.world | grep['world']).successful? # => true
+```
+
+Use `status` method to get a Process::Status object about last run status:
+
 ```ruby
 p = sh.which('bash')
 puts p
-p.exitstatus        # => #<Process::Status: pid 5931 exit 0>
+p.status        # => #<Process::Status: pid 5931 exit 0>
 p = sh.which.nonexists
 puts p
-p.exitstatus        # => #<Process::Status: pid 6156 exit 1>
+p.status        # => #<Process::Status: pid 6156 exit 1>
 ```
 
+More sugars
+-----------
+
+An EasySH object behaviors like an Array or a String sometimes.
+
+If you pass arguments like: `[int]`, `[int, int]`, `[range]`; `[regex]`, `[regex, int]`, then `to_a` or `to_s` will be automatically called.
+
+```ruby
+# Behavior like an Array
+sh.echo("Line 1\nLine 2\nLine 3")[1]    # => "Line 2"
+sh.echo("Line 1\nLine 2\nLine 3")[-1]   # => "Line 3"
+sh.echo("Line 1\nLine 2\nLine 3")[0, 2] # => ["Line 1", "Line 2"]
+sh.echo("Line 1\nLine 2\nLine 3")[1..2] # => ["Line 2", "Line 3"]
+
+# Behavior like a String
+sh.echo("Hello world\nThis is a test")[/T.*$/]            # => "This is a test"
+sh.echo("Hello world\nThis is a test")[/T.* ([^ ]*)$/, 1] # => "test"
+```
 
 Instant mode
 ------------
@@ -178,13 +215,6 @@ Tired with `puts` and `to_s` in REPL? Then set `instant = true`
 =>  Linux
 ```
 
-You may want to put these lines in `.pryrc` or `.irbrc`:
-
-```ruby
-require 'easysh'
-sh = EasySH.instant
-```
-
 Installation
 ============
 
@@ -192,4 +222,9 @@ Installation
 gem install easysh
 ```
 
+You may want to put these lines in `.pryrc` or `.irbrc`:
 
+```ruby
+require 'easysh'
+sh = EasySH.instant
+```

@@ -37,6 +37,33 @@ class EasySHTest < Test::Unit::TestCase
     end
   end
 
+  def test_alternatives
+    ref_cmd = sh['ls', '-l'].cmd
+    assert_equal ref_cmd, sh.ls['-l'].cmd
+    assert_equal ref_cmd, sh.ls[:l].cmd
+    assert_equal ref_cmd, sh.ls(:l).cmd
+    assert_equal ref_cmd, sh.ls._l.cmd
+    assert_equal ref_cmd, sh['ls']._l.cmd
+
+    ref_cmd = sh['ls', '--all', '--color=auto'].cmd
+    assert_equal ref_cmd, sh.ls.__all[:color => :auto].cmd
+    assert_equal ref_cmd, sh.ls.__all(:color => :auto).cmd
+    assert_equal ref_cmd, sh.ls[:all][:color => :auto].cmd
+    assert_equal ref_cmd, sh.ls(:all)[:color => :auto].cmd
+
+    ref_cmd = sh['tail', '-f', '-n', '3'].cmd
+    assert_equal ref_cmd, sh.tail._f._n['3'].cmd
+    assert_equal ref_cmd, sh.tail._f._n(3).cmd
+    assert_equal ref_cmd, sh.tail._f[n: 3].cmd
+    assert_equal ref_cmd, sh.tail._f[:n, 3].cmd
+    assert_equal ref_cmd, sh.tail._f(n: 3).cmd
+    assert_equal ref_cmd, sh.tail._f(:n, 3).cmd
+    assert_equal ref_cmd, sh.tail(:f, n: 3).cmd
+    assert_equal ref_cmd, sh.tail(:f, :n, 3).cmd
+    assert_equal ref_cmd, sh.tail[:f, n: 3].cmd
+    assert_equal ref_cmd, sh.tail[:f, :n, 3].cmd
+  end
+
   def test_enumerator
     with_tmpfile [*10..25].join("\n") do |tmppath, content|
       kat = sh.cat
@@ -97,9 +124,36 @@ class EasySHTest < Test::Unit::TestCase
     with_tmpfile do |tmppath, content|
       assert_fd_count_equal do
         assert_equal ((kat < tmppath) | kat).to_s, content
-        ((sh.echo('hello') | kat) > tmppath).!
+        ((sh.echo('hello') | kat) > tmppath).to_s
         assert_equal File.read(tmppath).chomp, 'hello'
       end
     end
+  end
+
+  def test_lines_regex
+    assert_fd_count_equal do
+      assert_equal sh.echo["a\nb"][1], 'b'
+      assert_equal sh.echo["a\nb"][-1], 'b'
+      assert_equal sh.echo["a\nb\nc"][0..1], ['a', 'b']
+      assert_equal sh.echo["a\nb\nc"][1, 2], ['b', 'c']
+      assert_equal sh.echo["a\nb\nc"][1, 2, 3].class, sh.class
+      assert_equal sh.echo["a\nb\nc"][1..2, 3].class, sh.class
+      assert_equal sh.echo["hello\nabcword"][/b.*o/], 'bcwo'
+      assert_equal sh.echo["hello\nabcword"][/b(.*)o/, 1], 'cw'
+      assert_equal sh.echo("Hello world\nThis is a test")[/T.*$/], "This is a test"
+      assert_equal sh.echo("Hello world\nThis is a test")[/T.* ([^ ]*)$/, 1], "test"
+    end
+  end
+
+  def test_status
+    assert_equal sh.true.exitcode, 0
+    assert_not_equal sh.false.exitstatus, 0
+    assert_equal sh.true.successful?, true
+    assert_equal sh.false.failed?, true
+    sh1 = sh.true
+    assert_equal sh1.status, nil
+    sh1.to_s
+    assert_not_equal sh1.status, nil
+    assert_equal sh1.exitcode, 0
   end
 end
